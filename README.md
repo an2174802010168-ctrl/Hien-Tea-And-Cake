@@ -1,1 +1,1 @@
-"# Hien-Tea-And-Cake" 
+ADMIN_ACCOUNT = "admin@gmail.com" "123456"
