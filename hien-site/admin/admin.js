@@ -23,6 +23,12 @@
     })[character]);
   }
 
+  function menuImageSrc(image) {
+    const source = String(image || "").trim();
+    if (!source || /^(?:data:image\/|https?:\/\/|\/)/i.test(source)) return source;
+    return source.startsWith("../") ? source : `../${source.replace(/^\.\//, "")}`;
+  }
+
   function readList(key, seed) {
     const stored = localStorage.getItem(key);
     if (stored === null) {
@@ -180,10 +186,30 @@
     if (!table || !form) return;
     const items = readList(STORAGE.menu, menuSeed());
     const formContainer = form.querySelector(".fgrid");
+    const imageInput = form.querySelector("#a6");
+    const imagePreview = form.querySelector("#a6-preview");
+    const previewImage = imagePreview.querySelector("img");
+    let previewUrl = "";
+
+    function clearImagePreview() {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      previewUrl = "";
+      previewImage.removeAttribute("src");
+      imagePreview.hidden = true;
+    }
+
+    imageInput.addEventListener("change", () => {
+      clearImagePreview();
+      const file = imageInput.files[0];
+      if (!file || !file.type.startsWith("image/")) return;
+      previewUrl = URL.createObjectURL(file);
+      previewImage.src = previewUrl;
+      imagePreview.hidden = false;
+    });
 
     function render() {
       table.innerHTML = items.map((item) => `<tr data-id="${escapeHtml(item.id)}">
-        <td>${item.image ? `<img src="${escapeHtml(item.image)}" alt="">` : ""}</td>
+        <td>${item.image ? `<img src="${escapeHtml(menuImageSrc(item.image))}" alt="${escapeHtml(item.name)}">` : ""}</td>
         <td><b>${escapeHtml(item.name)}</b></td>
         <td class="small">${escapeHtml(item.category)}</td>
         <td>${Number(item.price).toLocaleString("vi-VN")}đ</td>
@@ -247,11 +273,14 @@
         saveList(STORAGE.menu, items);
         render();
         form.reset();
+        clearImagePreview();
         notice(formContainer, "Đã thêm món vào thực đơn.");
       };
 
       if (!file) {
         addItem();
+      } else if (!file.type.startsWith("image/")) {
+        notice(formContainer, "Vui lòng chọn tệp ảnh hợp lệ.", true);
       } else if (file.size > 1024 * 1024) {
         notice(formContainer, "Ảnh quá lớn. Vui lòng chọn ảnh dưới 1 MB.", true);
       } else {
