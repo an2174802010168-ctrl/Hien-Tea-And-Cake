@@ -235,15 +235,30 @@
     const subtotal = cart.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 1), 0);
     const shipping = subtotal > 0 ? 25000 : 0;
     const total = subtotal + shipping;
+    const itemCount = cart.reduce((sum, item) => sum + Number(item.qty || 1), 0);
 
     const listHtml = cart.length
-      ? cart.map((item) => `
-          <div class="item">
-            <div class="pic " style="background-image:url(${item.image || "img/o-long.jpg"}),var(--grad)" aria-hidden="true"></div>
-            <div><b class="serif">${item.name}</b><div class="small muted">${item.options || "Vừa · Nóng"} · ${item.qty}×</div></div>
-            <b class="price">${money(item.price * item.qty)}</b>
+      ? cart.map((item, index) => {
+        const quantity = Math.max(1, Number(item.qty || 1));
+        const controls = pageName === "cart.html" ? `
+          <div class="cart-controls">
+            <div class="qty" role="group" aria-label="Điều chỉnh số lượng">
+              <button type="button" data-cart-action="decrease" data-cart-index="${index}" aria-label="Giảm số lượng" ${quantity <= 1 ? "disabled" : ""}>−</button>
+              <span aria-live="polite">${quantity}</span>
+              <button type="button" data-cart-action="increase" data-cart-index="${index}" aria-label="Tăng số lượng" ${quantity >= 20 ? "disabled" : ""}>+</button>
+            </div>
+            <button type="button" class="cart-remove" data-cart-action="remove" data-cart-index="${index}">Xóa</button>
           </div>
-        `).join("")
+        ` : "";
+
+        return `
+          <div class="item cart-item">
+            <div class="pic " style="background-image:url(${item.image || "img/o-long.jpg"}),var(--grad)" aria-hidden="true"></div>
+            <div class="cart-item-info"><b class="serif">${item.name}</b><div class="small muted">${item.options || "Vừa · Nóng"} · ${quantity}×</div>${controls}</div>
+            <b class="price">${money(item.price * quantity)}</b>
+          </div>
+        `;
+      }).join("")
       : `<p class="small muted">Giỏ hàng của bạn đang trống. Hãy thêm vài món yêu thích nhé.</p>`;
 
     if (pageName === "cart.html") {
@@ -253,7 +268,7 @@
             <p class="small muted crumb"><a href="index.html">Trang chủ</a> / <a href="menu.html">Trà & bánh</a> / Giỏ hàng</p>
             <p class="eyebrow">Giỏ hàng của bạn</p>
             <h1>${cart.length ? "Một chút ngon, sắp đến bên bạn." : "Giỏ hàng chưa có món nào."}</h1>
-            <p class="muted">${cart.length ? "02 món nhỏ, được Hiên chuẩn bị bằng thật nhiều thương." : "Hãy chọn một món thơm và để Hiên chuẩn bị trọn vẹn cho bạn."}</p>
+            <p class="muted">${cart.length ? `${itemCount} món nhỏ, được Hiên chuẩn bị bằng thật nhiều thương.` : "Hãy chọn một món thơm và để Hiên chuẩn bị trọn vẹn cho bạn."}</p>
             <div class="two side">
               <div>
                 <div class="sech small"><b>Món đã chọn</b></div>
@@ -262,9 +277,9 @@
               </div>
               <div class="panel sage">
                 <h3>Đơn nhỏ của bạn</h3>
-                <div class="small muted">Tạm tính · ${cart.reduce((sum, item) => sum + Number(item.qty || 0), 0)} món</div>
+                <div class="small muted">Tạm tính · ${itemCount} món</div>
                 <div class="line tot"><span>Tạm tính</span><b class="price" style="font-size:1.4rem">${money(subtotal)}</b></div>
-                <a class="btn wide" href="checkout.html">${cart.length ? "Tiến hành thanh toán" : "Tiếp tục mua hàng"} ↗</a>
+                <a class="btn wide" href="${cart.length ? "checkout.html" : "menu.html"}">${cart.length ? "Tiến hành thanh toán" : "Tiếp tục mua hàng"} ↗</a>
                 <p class="small muted">Phí giao hàng và ưu đãi sẽ được tính ở bước tiếp theo.</p>
                 <p class="small">Hiên đây: 090 123 24 24</p>
               </div>
@@ -319,6 +334,36 @@
         </div>
       </section>
     `;
+  }
+
+  function handleCartItemAction(event) {
+    const button = event.target.closest("[data-cart-action]");
+    if (!button) return;
+
+    const index = Number(button.dataset.cartIndex);
+    if (!Number.isInteger(index)) return;
+
+    const cart = getCart();
+    const item = cart[index];
+    if (!item) return;
+
+    const quantity = Math.max(1, Number(item.qty || 1));
+    switch (button.dataset.cartAction) {
+      case "increase":
+        item.qty = Math.min(20, quantity + 1);
+        break;
+      case "decrease":
+        item.qty = Math.max(1, quantity - 1);
+        break;
+      case "remove":
+        cart.splice(index, 1);
+        break;
+      default:
+        return;
+    }
+
+    setCart(cart);
+    renderCartPage();
   }
 
   function handleCheckoutSubmit(event) {
@@ -396,6 +441,8 @@
   }
 
   function bindForms() {
+    document.addEventListener("click", handleCartItemAction);
+
     document.querySelectorAll("form[action*='cart.html']").forEach((form) => {
       form.addEventListener("submit", addItemToCart);
     });

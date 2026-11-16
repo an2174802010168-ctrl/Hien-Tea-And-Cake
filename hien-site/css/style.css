@@ -118,3 +118,8 @@ footer .fb{grid-template-columns:1fr auto;border-top:1px solid #2f5342;margin-to
 .qn{width:84px}
 .card[hidden],#app form[hidden]{display:none!important}
 .admin-unavailable{padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--sage);color:var(--green)}
+.cart-item .cart-item-info{min-width:0}
+.cart-controls{display:flex;align-items:center;gap:14px;margin-top:8px}
+.cart-remove{border:0;background:none;color:var(--muted);padding:4px 0;font:inherit;font-size:.85rem;text-decoration:underline;cursor:pointer}
+.qty button:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:760px){.cart-item{grid-template-columns:64px minmax(0,1fr)}.cart-item .price{grid-column:2;justify-self:start}}
