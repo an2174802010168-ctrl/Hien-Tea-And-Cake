@@ -5,7 +5,12 @@
     bookings: "hien-admin-bookings",
     orders: "hien-admin-orders",
   };
-  const page = location.pathname.split("/").pop();
+  const adminDirectory = new URL(".", document.currentScript.src);
+  const adminDashboardUrl = new URL("index.html", adminDirectory).href;
+  const adminLoginUrl = new URL("login.html", adminDirectory).href;
+  const currentPath = location.pathname.replace(/\/+$/, "");
+  const adminBasePath = adminDirectory.pathname.replace(/\/+$/, "");
+  const page = currentPath === adminBasePath ? "index.html" : currentPath.split("/").pop();
   const loginForm = document.querySelector(".login form");
 
   function escapeHtml(value) {
@@ -50,10 +55,10 @@
 
   function protectPage() {
     if (page === "login.html") {
-      if (sessionStorage.getItem(STORAGE.session)) location.replace("index.html");
+      if (sessionStorage.getItem(STORAGE.session)) location.replace(adminDashboardUrl);
       return;
     }
-    if (!sessionStorage.getItem(STORAGE.session)) location.replace("login.html");
+    if (!sessionStorage.getItem(STORAGE.session)) location.replace(adminLoginUrl);
 
     const profile = document.querySelector(".side .me");
     const toolbar = document.querySelector(".main .tb");
@@ -65,7 +70,7 @@
       logout.textContent = "Đăng xuất";
       logout.addEventListener("click", () => {
         sessionStorage.removeItem(STORAGE.session);
-        location.replace("login.html");
+        location.replace(adminLoginUrl);
       });
       toolbar.append(logout);
       if (email) profile.title = email;
@@ -149,7 +154,7 @@
       event.preventDefault();
       const email = loginForm.querySelector("#u").value.trim();
       sessionStorage.setItem(STORAGE.session, email);
-      location.assign("index.html");
+      location.assign(adminDashboardUrl);
     });
   }
 
